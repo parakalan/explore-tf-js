@@ -1,0 +1,49 @@
+<html>
+<head>
+    <title>Train a text classifier</title>
+</head>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.13.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder"></script>
+<script src="models/simpleLSTMModel.js"></script>
+<script src="models/useLayer.js"></script>
+<script src="models/simpleLSTMModel.js"></script>
+
+<script type="text/javascript">
+    useModel = null;
+    use.load().then(model => {
+        console.log("USE Model loaded")
+        useModel = model;
+      // const sentences = [
+      //   'Hello.',
+      //   'How are you?'
+      // ];
+      // model.embed(sentences).then(embeddings => {
+      //   // `embeddings` is a 2D tensor consisting of the 512-dimensional embeddings for each sentence.
+      //   // So in this example `embeddings` has the shape [2, 512].
+      //   embeddings.print(true /* verbose */);
+      // });
+    });
+    function process() {
+        var fileUpload = document.getElementById("file")
+        var reader = new FileReader();
+        reader.onload = function (e) {
+                var workbook = XLSX.read(e.target.result, {
+                type: 'binary'
+            });
+            var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[ workbook.SheetNames[0]]);
+            train(excelRows)
+        };
+        reader.readAsBinaryString(fileUpload.files[0]);
+    }
+
+    function train(data) {
+        console.log(data);
+        model = getSimpleLSTMModel();
+    }
+</script>
+<body>
+    <input type="file" name="file" id="file">
+    <button id="train" onclick="process()">Train</button>
+</body>
+
