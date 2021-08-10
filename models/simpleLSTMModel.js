@@ -1,11 +1,8 @@
 function getSimpleLSTMModel(config) {
 	const model = tf.sequential();
 
-	let embeddingLayer = new USELayer({inputShape: 1024})
-
-	model.add(embeddingLayer)
-
 	model.add(tf.layers.dense({
+		inputShape: 512,
 		units: 256,
 		kernelInitializer: 'varianceScaling',
 		activation: 'relu'
@@ -20,7 +17,7 @@ function getSimpleLSTMModel(config) {
 	model.add(tf.layers.dropout(0.2))
 
 	model.add(tf.layers.dense({
-		units: config.outputClasses,
+		units: config.numClasses,
 		kernelInitializer: 'varianceScaling',
 		activation: 'softmax'
 	}));
@@ -56,12 +53,12 @@ function getSimpleLSTMModel(config) {
 
 	// // Choose an optimizer, loss function and accuracy metric,
 	// // then compile and return the model
-	// const optimizer = tf.train.adam();
-	// model.compile({
-	// optimizer: optimizer,
-	// loss: 'categoricalCrossentropy',
-	// metrics: ['accuracy'],
-	// });
+	const optimizer = tf.train.adam();
+	model.compile({
+	optimizer: optimizer,
+	loss: 'categoricalCrossentropy',
+	metrics: ['accuracy'],
+	});
 
 	return model;
 }

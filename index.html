@@ -10,40 +10,146 @@
 <script src="models/simpleLSTMModel.js"></script>
 
 <script type="text/javascript">
-    useModel = null;
-    use.load().then(model => {
-        console.log("USE Model loaded")
-        useModel = model;
-      // const sentences = [
-      //   'Hello.',
-      //   'How are you?'
-      // ];
-      // model.embed(sentences).then(embeddings => {
-      //   // `embeddings` is a 2D tensor consisting of the 512-dimensional embeddings for each sentence.
-      //   // So in this example `embeddings` has the shape [2, 512].
-      //   embeddings.print(true /* verbose */);
-      // });
-    });
-    function process() {
+    use.load().then(model => {console.log("USE Model loaded")});
+    async function process() {
         var fileUpload = document.getElementById("file")
         var reader = new FileReader();
-        reader.onload = function (e) {
+        reader.onload = async function (e) {
                 var workbook = XLSX.read(e.target.result, {
                 type: 'binary'
             });
             var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[ workbook.SheetNames[0]]);
+            excelRows = filter(excelRows);
+            console.log(excelRows.length)
             train(excelRows)
         };
         reader.readAsBinaryString(fileUpload.files[0]);
     }
 
     function train(data) {
-        console.log(data);
-        model = getSimpleLSTMModel();
+        shuffleArray(data)
+        shuffleArray(data)
+        shuffleArray(data)
+        let classesConfig = processClasses(data);
+        let model = getSimpleLSTMModel({numClasses: classesConfig.uniqueClasses.length});
+        model.summary();
+
+        getEmbeddings(data).then(embeddings => {
+            fit(model, embeddings, tf.tensor(classesConfig.oneHotClasses));
+        })
+    }
+
+    function filter(data) {
+        let copyData = [];
+        for(var i=0; i < data.length; i++) {
+            if(data[i].Message != undefined) {
+                copyData.push(data[i]);
+            }
+        }
+        return copyData;
+    }
+
+    function fit(model, X, y) {
+        model.fit(X, y, {
+            batchSize: 32,
+            epochs: 100,
+            callbacks: {onEpochEnd: (epoch, logs) => epochEnd(epoch, logs)}
+        }).then(h => { console.log(h); });
+    }
+
+    function epochEnd(epoch, logs) {
+        console.log(epoch, logs);
+        document.getElementById("training").setAttribute("value", epoch);
+    }
+
+    function processClasses(data) {
+        let allClasses = [];
+        let uniqueClasses = [];
+        for (var i = 0; i < data.length; i++) {
+            allClasses.push(data[i].Class);
+            if(!uniqueClasses.includes(data[i].Class)) {
+                uniqueClasses.push(data[i].Class);
+            }
+        }
+        let classMap = {};
+        for(var i=0; i < uniqueClasses.length; i++) {
+            classMap[uniqueClasses[i]] = i;
+        }
+
+        let oneHotClasses = []
+        let stub = Array(uniqueClasses.length).fill(0);
+        for(var i=0; i < allClasses.length; i++) {
+            let tmp = stub.slice();
+            tmp[classMap[allClasses[i]]] = 1;
+            oneHotClasses.push(tmp);
+        }
+        return {
+            "allClasses": allClasses,
+            "uniqueClasses": uniqueClasses,
+            "classMap": classMap,
+            "oneHotClasses": oneHotClasses
+        }
+    }
+
+    function getEmbeddings(data) {
+        let messages = [];
+        for (var i = 0; i < data.length; i++) {
+            messages.push(data[i].Message);
+        }
+        let embeddings = null
+        let embeddingsBar = document.getElementById("embeddings");
+        let embeddingsPercent = document.getElementById("embeddings_percent");
+        return {
+            async then(callback) {
+                let model = await use.load();
+                let embeddings = []
+                for(var i=0; i < messages.length; i = i + 32) {
+                    let messageBatch = messages.slice(i, i + 32);
+                    let embeddingsBatch = null;
+                    try {
+                        embeddingsBatch = await model.embed(messageBatch);
+
+                    } catch (error) {
+                        console.log(messageBatch)
+                        console.error(error);
+                    }
+                    if(embeddings == null) {
+                        embeddings = embeddingsBatch;
+                    }
+                    else {
+                        embeddings = tf.concat([embeddings, embeddingsBatch], 0)
+                    }
+                    embeddingsBar.setAttribute("value", i);
+                    embeddingsPercent.innerHtml = i.toString() + " / " + messages.length.toString();
+                }
+                return callback(embeddings);
+            }
+        }
+    }
+
+    function shuffleArray(array) {
+        for (var i = array.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+        }
     }
 </script>
 <body>
     <input type="file" name="file" id="file">
     <button id="train" onclick="process()">Train</button>
+    <div></div><br><br>
+    <div>
+        <label for="embeddings">Embeddings</label>&nbsp;&nbsp;
+        <progress id="embeddings" value="0" max="5000" style="height:24px;width:50%;border-radius:0px"></progress>
+        <span id="embeddings_percent"></span>
+    </div>
+    <br><br>
+    <div>
+        <label for="training">Training</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <progress id="training" value="0" max="100" style="height:24px;width:50%;border-radius:0px"></progress>
+        <span id="training_percent"></span>
+    </div>
 </body>
 
