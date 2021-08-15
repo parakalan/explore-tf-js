@@ -30,7 +30,7 @@ function fit(model, X, y) {
 
 function epochEnd(epoch, logs) {
     console.log(epoch, logs);
-    postMessage(["increment_epoch", epoch]);
+    postMessage(["increment_epoch", {"epoch": epoch+1, "logs": logs}]);
 }
 
 function processClasses(data) {
@@ -92,6 +92,7 @@ function getEmbeddings(data) {
                 console.log(i)
                 postMessage(["increment_embeddings", i]);
             }
+            postMessage(["increment_embeddings", messages.length]);
             return callback(embeddings);
         }
     }
