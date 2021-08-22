@@ -84,8 +84,20 @@
               x: [],
               y: []
             }], {
-              xaxis: {range: [0, 100]},
-              yaxis: {range: [0, 1]}
+              title: {
+                text:'Training Loss'
+              },
+              xaxis: {
+                title: {
+                    text: 'Epochs'
+                },
+                range: [0, 100]
+              },
+              yaxis: {
+                title: {
+                    text: 'Loss'
+                },
+                range: [0, 1]}
             });
 
             accPlot = Plotly.newPlot('acc-plot', [{
@@ -94,8 +106,20 @@
               x: [],
               y: []
             }], {
-              xaxis: {range: [0, 100]},
-              yaxis: {range: [0, 1]}
+              title: {
+                text:'Training Accuracy'
+              },
+              xaxis: {
+                title: {
+                    text: 'Epochs'
+                },
+                range: [0, 100]
+              },
+              yaxis: {
+                title: {
+                    text: 'Accuracy'
+                },
+                range: [0, 1]}
             });
         }
    </script>
