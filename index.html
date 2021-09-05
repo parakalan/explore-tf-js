@@ -26,6 +26,8 @@
                 $("#training").html(i.epoch.toString() + ' / ' + epochs.toString())
                 Plotly.extendTraces("acc-plot",  { y: [[i.logs.acc]], x: [[i.epoch]] }, [0]);
                 Plotly.extendTraces("loss-plot",  { y: [[i.logs.loss]], x: [[i.epoch]] }, [0]);
+                Plotly.extendTraces("val-acc-plot",  { y: [[i.logs.val_acc]], x: [[i.epoch]] }, [0]);
+                Plotly.extendTraces("val-loss-plot",  { y: [[i.logs.val_loss]], x: [[i.epoch]] }, [0]);
             }
         }
         async function process() {
@@ -37,7 +39,8 @@
                 });
                 var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[workbook.SheetNames[0]]);
                 excelRows = filter(excelRows);
-                // excelRows = excelRows.slice(0, 100);
+                // Uncomment for testing changes with small data size
+                // excelRows = excelRows.slice(0, 100).concat(excelRows.slice(excelRows.length-100, excelRows.length))
                 console.log(excelRows.length);
                 total = excelRows.length;
                 $("#embeddingsBar").show();
@@ -121,6 +124,50 @@
                 },
                 range: [0, 1]}
             });
+
+            valLossPlot = Plotly.newPlot('val-loss-plot', [{
+              mode: 'lines',
+              line: {color: '#80CAF6'},
+              x: [],
+              y: []
+            }], {
+              title: {
+                text:'Validation Loss'
+              },
+              xaxis: {
+                title: {
+                    text: 'Epochs'
+                },
+                range: [0, 100]
+              },
+              yaxis: {
+                title: {
+                    text: 'Loss'
+                },
+                range: [0, 1]}
+            });
+
+            valAccPlot = Plotly.newPlot('val-acc-plot', [{
+              mode: 'lines',
+              line: {color: '#80CAF6'},
+              x: [],
+              y: []
+            }], {
+              title: {
+                text:'Validation Accuracy'
+              },
+              xaxis: {
+                title: {
+                    text: 'Epochs'
+                },
+                range: [0, 100]
+              },
+              yaxis: {
+                title: {
+                    text: 'Accuracy'
+                },
+                range: [0, 1]}
+            });
         }
    </script>
    <body>
@@ -158,6 +205,10 @@
       <div class="plots" style="display: flex; margin-left: 10%;">
          <span id="loss-plot"></span>
          <span id="acc-plot"></span>
+      </div>
+      <div class="plots2" style="display: flex; margin-left: 10%;">
+         <span id="val-loss-plot"></span>
+         <span id="val-acc-plot"></span>
       </div>
    </body>
    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">

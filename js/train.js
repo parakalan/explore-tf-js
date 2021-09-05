@@ -1,5 +1,9 @@
 var scriptsImported = false;
 function train(data) {
+    if (!('function' === typeof importScripts)) {
+        return;
+    }
+
     if(!scriptsImported) {
         importScripts(
             'lib/tf.min.js',
@@ -11,6 +15,8 @@ function train(data) {
     shuffleArray(data)
     shuffleArray(data)
     shuffleArray(data)
+    // Split the data into train and val and append val at the end of train. TFJS internally samples from the back.
+    data = splitReorderData(data);
     let classesConfig = processClasses(data);
     let model = getSimpleUSEModel({numClasses: classesConfig.uniqueClasses.length});
     model.summary();
@@ -22,9 +28,10 @@ function train(data) {
 
 function fit(model, X, y) {
     model.fit(X, y, {
-        batchSize: 32,
+        batchSize: 16,
         epochs: 100,
-        callbacks: {onEpochEnd: (epoch, logs) => epochEnd(epoch, logs)}
+        callbacks: {onEpochEnd: (epoch, logs) => epochEnd(epoch, logs)},
+        validationSplit: 0.1
     }).then(h => { console.log(h); });
 }
 
@@ -96,6 +103,25 @@ function getEmbeddings(data) {
             return callback(embeddings);
         }
     }
+}
+
+function splitReorderData(data, frac=0.1) {
+    let uniqueClassMessages = {};
+    for (var i = 0; i < data.length; i++) {
+        if (!(data[i].Class in uniqueClassMessages))
+            uniqueClassMessages[data[i].Class] = new Array();
+        uniqueClassMessages[data[i].Class].push(data[i]);
+    }
+    let trainingData = [];
+    let validationData = [];
+    for (const [key, value] of Object.entries(uniqueClassMessages)) {
+        let pickCount = Math.round(frac * value.length);
+        shuffleArray(value);
+        validationData.push(...value.slice(0, pickCount));
+        trainingData.push(...value.slice(pickCount, value.length));
+    }
+    trainingData.push(...validationData);
+    return trainingData;
 }
 
 function shuffleArray(array) {
